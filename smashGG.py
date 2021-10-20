@@ -93,6 +93,7 @@ class smashGG:
                 self.url, data = {
                     "query": self.q_playersets, "variables": f'{{"id": {self.id}}}'
                 }, headers={'Authorization': f'Bearer {self.api}'}).json()
+            print(req)
             self.all_sets = req["data"]["player"]["sets"]["nodes"]
             self.tag = req["data"]["player"]["gamerTag"]
             self.slug = req["data"]["player"]["user"]["discriminator"]
@@ -103,6 +104,7 @@ class smashGG:
                 self.url, data = {
                     "query": self.q_playersetsBySlug, "variables": f'{{"descrim": "{self.slug}"}}'
                 }, headers={'Authorization': f'Bearer {self.api}'}).json()
+            print(req)
             self.all_sets = req["data"]["user"]["player"]["sets"]["nodes"]
             self.tag = req["data"]["user"]["player"]["gamerTag"]
 
@@ -135,7 +137,9 @@ class smashGG:
             headers={
                 'Authorization': f'Bearer {self.api}',
             }
-        ).json()['data']["user"]["player"]['sets']["nodes"]
+        ).json()
+        print(req)
+        req = req['data']["user"]["player"]['sets']["nodes"]
 
         
         for i in req:
@@ -186,12 +190,12 @@ class smashGG:
                             self.head2head[i[0][1]].append(i[0][0])
                         else:
                             self.head2head[i[0][1]] = [i[1][0]]
-        self.oppponents = list(self.head2head.keys())
+        self.opponents = list(self.head2head.keys())
 
     def get_opponents(self, game="Both"):
         _ = ["All"]
         self.create_head2heads(game)
-        for i in self.oppponents:
+        for i in self.opponents:
             _.append(i)
         return _
 
