@@ -12,7 +12,9 @@ class h2h(commands.Cog):
         self.HadToLoadMorePlayers = False
         self.HadToLoadMore = False
 
-    async def edit(self, reply):
+
+
+    async def lenChecks(self):
         if len(self.client.games) > 25:
             if self.game_filter == "Load More":
                 self.HadToLoadMore = True
@@ -57,32 +59,15 @@ class h2h(commands.Cog):
         else:
             self.temp_op = self.op
 
-        
-        if len(self.client.games)==1:
-            await reply.edit(content="Please select from the following filters!",components=[
+
+    async def edit(self, reply):
+        await self.lenChecks()
+        await reply.edit(content="Please select from the following filters!",components=[
                 Select(
                     id="game_filter",
                     placeholder="Filter By Game",
                     options=[
-                        SelectOption(default=True, label=i, value=i)
-                        for i in self.temp_games
-                    ]),
-                Select(
-                    id="player_filter",
-                    placeholder="Filter By Player", 
-                    options=[
-                        SelectOption(default=i==self.playerTag and i != "Load More", label=i, value = i)
-                        for i in self.temp_op
-                    ]),
-                Button(label = "Get H2H Results!", custom_id="get_results")])
-        
-        else:
-            await reply.edit(content="Please select from the following filters!",components=[
-                Select(
-                    id="game_filter",
-                    placeholder="Filter By Game",
-                    options=[
-                        SelectOption(default=i==self.game_filter, label=i, value=i)
+                        SelectOption(default=i==self.game_filter or len(self.client.games)==1, label=i, value=i)
                         for i in self.temp_games
                     ]),
                 Select(
