@@ -2,59 +2,98 @@ from logging import PlaceHolder, error, exception
 from discord import client, player
 from discord.ext import commands
 from discord_components import DiscordComponents
-from discord_components.component import Select, SelectOption
+from discord_components.component import Select, SelectOption, Button
 from smashGG import *
 
 class h2h(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
-
+        self.HadToLoadMorePlayers = False
+        self.HadToLoadMore = False
 
     async def edit(self, reply):
-
-        if len(self.op) > 25:
-            temp_op = self.op[:24] + ["Load More"]
-        else:
-            temp_op = self.op
         if len(self.client.games) > 25:
-            temp_games = self.client.games[:24] + ["Load More"]
+            if self.game_filter == "Load More":
+                self.HadToLoadMore = True
+                if (len(self.client.games)) < (self.client.games.index(self.temp_games[len(self.temp_games)-2])+24):
+                    self.temp_games = self.client.games[
+                    self.client.games.index(self.temp_games[len(self.temp_games)-2])
+                                            :
+                    self.client.games.index(self.temp_games[len(self.temp_games)-2])+24]
+                else:
+                    self.temp_games = self.client.games[
+                    self.client.games.index(self.temp_games[len(self.temp_games)-2])
+                                            :
+                    self.client.games.index(self.temp_games[len(self.temp_games)-2])+24] + ["Load More"]
+            else:
+                if self.HadToLoadMore:
+                    pass
+                else:
+                    self.temp_games = self.client.games[:24] + ["Load More"]
+        
         else:
-            temp_games = self.client.games
+            self.temp_games = self.client.games
+        
+        if len(self.op) > 25:
+            if self.playerTag == "Load More":
+                self.HadToLoadMorePlayers = True
+                if (len(self.op)) < (self.op.index(self.temp_op[len(self.temp_op)-2])+24):
+                    self.temp_op = self.op[
+                    self.op.index(self.temp_op[len(self.temp_op)-2])
+                                            :
+                    self.op.index(self.temp_op[len(self.temp_op)-2])+24]
+                else:
+                    self.temp_op = self.op[
+                    self.op.index(self.temp_op[len(self.temp_op)-2])
+                                            :
+                    self.op.index(self.temp_op[len(self.temp_op)-2])+24] + ["Load More"]
+            else:
+                if self.HadToLoadMorePlayers:
+                    pass
+                else:
+                    self.temp_op = self.op[:24] + ["Load More"]
+        
+        else:
+            self.temp_op = self.op
+
         
         if len(self.client.games)==1:
-            await reply.edit(components=[
+            await reply.edit(content="Please select from the following filters!",components=[
                 Select(
                     id="game_filter",
                     placeholder="Filter By Game",
                     options=[
                         SelectOption(default=True, label=i, value=i)
-                        for i in temp_games
+                        for i in self.temp_games
                     ]),
                 Select(
                     id="player_filter",
                     placeholder="Filter By Player", 
                     options=[
-                        SelectOption(default=i==self.playerTag, label=i, value = i)
-                        for i in temp_op
-                    ])])
+                        SelectOption(default=i==self.playerTag and i != "Load More", label=i, value = i)
+                        for i in self.temp_op
+                    ]),
+                Button(label = "Get H2H Results!", custom_id="get_results")])
+        
         else:
-            await reply.edit(components=[
+            await reply.edit(content="Please select from the following filters!",components=[
                 Select(
                     id="game_filter",
                     placeholder="Filter By Game",
                     options=[
                         SelectOption(default=i==self.game_filter, label=i, value=i)
-                        for i in temp_games
+                        for i in self.temp_games
                     ]),
                 Select(
                     id="player_filter",
                     placeholder="Filter By Player", 
                     options=[
-                        SelectOption(default=i==self.playerTag, label=i, value = i)
-                        for i in temp_op
-                    ])])
-
+                        SelectOption(default=i==self.playerTag and i != "Load More", label=i, value = i)
+                        for i in self.temp_op
+                    ]),
+                Button(label = "Get H2H Results!", custom_id="get_results")])
+        
     
     @commands.command(name="h2h")
     async def h2h(self, ctx):
@@ -77,18 +116,28 @@ class h2h(commands.Cog):
 
         @self.bot.event
         async def on_button_click(interaction):
-
-            await self.edit(reply)
-            await interaction.respnd(type=6)
+            if interaction.user.id != ctx.author.id:
+                await interaction.respond(
+                    content=f"Only {ctx.author.mention} can interact with this."
+                )
+                return
+            print(self.client.h2hscores(playerTag=self.playerTag, game=self.game_filter))
+            await interaction.respond(type=6)
         
         @self.bot.event
         async def on_select_option(interaction):
+            if interaction.user.id != ctx.author.id:
+                await interaction.respond(
+                    content=f"Only {ctx.author.mention} can interact with this."
+                )
+                return
             if interaction.custom_id == "game_filter":
                 self.game_filter = interaction.values[0]
+                self.temp_op = None
+                self.HadToLoadMorePlayers = False
                 self.op = self.client.get_opponents(game=self.game_filter)
             elif interaction.custom_id == "player_filter":
                 self.playerTag = interaction.values[0]
-                print(self.client.h2hscores(playerTag=self.playerTag, game=self.game_filter))
             await self.edit(reply)
             await interaction.respond(type=6)
             
