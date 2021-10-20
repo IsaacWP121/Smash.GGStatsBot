@@ -1,5 +1,5 @@
 from smashGG import *
-import discord
+import discord, config, stats
 from discord.ext import commands
 from discord_components import DiscordComponents
 
@@ -13,9 +13,12 @@ async def on_ready():
     DiscordComponents(discordBot)
     print("head2headbot is running")
 
+cogs = [stats]
+for i in cogs:
+    i.setup(discordBot)
 
 if __name__ == "__main__":
-    discordBot.run()
+    discordBot.run(config.token())
     #client = smashGG(id=1572895) # either use the player id (made for testing purposes)
     client = smashGG(slug="https://smash.gg/user/d648e3d5") # or put in a smash.gg profile link
     #print(client.games)

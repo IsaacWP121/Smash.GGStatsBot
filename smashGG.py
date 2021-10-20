@@ -16,6 +16,9 @@ class smashGG:
                         player(id:$id) {
                             id
                             gamerTag
+                            user {
+                                discriminator
+                            }
                             sets(perPage: 500, page: 1) {
                                 nodes {
                                     id
@@ -24,10 +27,6 @@ class smashGG:
                                         id
                                         name
                                         videogame {
-                                            name
-                                        }
-                                        tournament {
-                                            id
                                             name
                                         }
                                     }
@@ -44,6 +43,7 @@ class smashGG:
                                 sets(perPage: 500, page: 1) {
                                     nodes {
                                         id
+                                        displayScore
                                         event {
                                         videogame {
                                             name
@@ -78,10 +78,6 @@ class smashGG:
                                                     videogame{
                                                         name
                                                     }
-                                                    tournament {
-                                                        id
-                                                        name
-                                                    }
                                                 }
                                             }
                                         }
@@ -99,6 +95,7 @@ class smashGG:
                 }, headers={'Authorization': f'Bearer {self.api}'}).json()
             self.all_sets = req["data"]["player"]["sets"]["nodes"]
             self.tag = req["data"]["player"]["gamerTag"]
+            self.slug = req["data"]["player"]["user"]["discriminator"]
                 # returns a list of dicts with some sort of structure like this{id, displayScore, event={id, name, tournament={id, name}}} (everything inside of the nodes part of the query)
 
         elif self.slug != None:
@@ -122,6 +119,8 @@ class smashGG:
         for i in range(len(self.sets_minusdqs)):
             if not self.sets_minusdqs[i]["event"]["videogame"]["name"] in self.games:
                 self.games.append(self.sets_minusdqs[i]["event"]["videogame"]["name"])
+        if len(self.games) > 1:
+            self.games.insert(0, "Both") 
 
 
     def get_set_entrants(self):
@@ -141,9 +140,12 @@ class smashGG:
         
         for i in req:
             _temp = []
-            for it in i["slots"]:
-                _temp.append([i["id"], it['entrant']["participants"][0]['gamerTag'], i["event"]["videogame"]["name"]])
-            self.set_entrants.append(_temp)
+            if i["displayScore"] == "DQ":
+                pass
+            else:
+                for it in i["slots"]:
+                    _temp.append([i["id"], it['entrant']["participants"][0]['gamerTag'], i["event"]["videogame"]["name"]])
+                self.set_entrants.append(_temp)
         return self.set_entrants# arranged where x[?] returns a nested list containing the following information [["SetId", "Player1Tag", game], ["SetId", "Player2Tag", game]] 
     
 
@@ -151,7 +153,7 @@ class smashGG:
         Sets = self.get_set_entrants()
         # orders things into a dict with the key of the players name, and the value of a list of ids
         self.head2head = {}
-        if game == "all":
+        if game == "Both":
             for i in Sets: # for every set in the list of sets
                 if i[0][1] == self.tag:
                     if i[1][1] == self.tag:
@@ -186,8 +188,14 @@ class smashGG:
                             self.head2head[i[0][1]] = [i[1][0]]
         self.oppponents = list(self.head2head.keys())
 
+    def get_opponents(self, game="Both"):
+        _ = ["All"]
+        self.create_head2heads(game)
+        for i in self.oppponents:
+            _.append(i)
+        return _
 
-    def h2hscores(self, playerTag="all", game="all"): # needs to be a list of id's not a list of sets
+    def h2hscores(self, playerTag="all", game="Both"): # needs to be a list of id's not a list of sets
         self.create_head2heads(game)
         self.scores = []
         _temp = []
@@ -195,7 +203,7 @@ class smashGG:
         for i in self.head2head:
             _temp.append(i)
 
-        if playerTag != "all":
+        if playerTag != "All":
             if playerTag in _temp:
                 _temp2 = difflib.get_close_matches(playerTag, _temp, n=3)
                 for i in self.head2head[_temp2[0]]:
