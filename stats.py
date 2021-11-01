@@ -3,6 +3,12 @@ from discord.ext import commands
 from discord import Embed, Color
 from discord_components.component import Select, SelectOption, Button
 from smashGG import *
+'''
+get_opponents()
+sets_minusdqs
+opponents
+games
+h2hscores'''
 
 class h2h(commands.Cog):
     
